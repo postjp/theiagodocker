@@ -1,4 +1,4 @@
-ARG NODE_VERSION=12.18.3
+ARG NODE_VERSION=12.22.9
 
 FROM node:$NODE_VERSION as theia
 
@@ -22,8 +22,30 @@ RUN yarn --pure-lockfile && \
 
 FROM node:$NODE_VERSION
 
+ENV GO_VERSION=1.18.2 \
+    GOOS=linux \
+    GOARCH=amd64 \
+    GOROOT=/usr/local/go \
+    GOPATH=/usr/local/go-packages 
+ENV PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+
+
 RUN apt-get -qq update && \
-    apt-get install -y libsecret-1-0
+    apt-get install -y libsecret-1-0 && \
+    curl -fsSL https://storage.googleapis.com/golang/go$GO_VERSION.$GOOS-$GOARCH.tar.gz -o go$GO_VERSION.$GOOS-$GOARCH.tar.gz  && \ 
+    mkdir -p /usr/local/go && \
+    mkdir -p /usr/local/go-packages && \
+    tar -C /usr/local -xzf go$GO_VERSION.$GOOS-$GOARCH.tar.gz && \
+    rm -rf go$GO_VERSION.$GOOS-$GOARCH.tar.gz && \
+# VS Code Go Tools https://github.com/golang/vscode-go/blob/master/docs/tools.md
+    go install github.com/ramya-rao-a/go-outline@latest && \
+    go install github.com/cweill/gotests/gotests@v1.6.0  && \
+    go install github.com/fatih/gomodifytags@v1.16.0  && \
+    go install github.com/josharian/impl@v1.1.0 && \
+    go install github.com/haya14busa/goplay/cmd/goplay@v1.0.0  && \
+    go install github.com/go-delve/delve/cmd/dlv@v1.8.3  && \
+    GO111MODULE=on go install  github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
+                   go install golang.org/x/tools/gopls@v0.8.3
 
 COPY --from=theia /home/theia /home/theia
 
@@ -35,35 +57,23 @@ RUN adduser --disabled-password --gecos '' theia && \
     mkdir -p /home/project && \
     mkdir -p /home/go && \
     mkdir -p /home/go-tools && \
+    mkdir -p /home/theia/plugins && \
     chown -R theia:theia /home/theia && \
     chown -R theia:theia /home/project && \
     chown -R theia:theia /home/go && \
+    chown -R theia:theia /home/theia/plugins && \
     chown -R theia:theia /home/go-tools;
 
 USER theia
 
 ## Go
-ENV GO_VERSION=1.17.3 \
+ENV GO_VERSION=1.18.2 \
     GOOS=linux \
     GOARCH=amd64 \
     GOROOT=/usr/local/go \
     GOPATH=/usr/local/go-packages
 ENV PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
-# Install Go
-# https://go.dev/doc/install
-RUN curl -fsSL https://storage.googleapis.com/golang/go$GO_VERSION.$GOOS-$GOARCH.tar.gz | tar -C /usr/local -xzv
-
-# VS Code Go Tools https://github.com/golang/vscode-go/blob/master/docs/tools.md
-RUN go get -u -v github.com/uudashr/gopkgs/cmd/gopkgs@v2 && \
-    go get -u -v github.com/ramya-rao-a/go-outline && \
-    go get -u -v github.com/cweill/gotests/gotests && \
-    go get -u -v github.com/fatih/gomodifytags && \
-    go get -u -v github.com/josharian/impl && \
-    go get -u -v github.com/haya14busa/goplay/cmd/goplay && \
-    go get -u -v github.com/go-delve/delve/cmd/dlv && \
-    GO111MODULE=on go get -v github.com/golangci/golangci-lint/cmd/golangci-lint && \
-                   go get -u -v golang.org/x/tools/gopls@v0.7.3
 
 # Configure Theia
 ENV SHELL=/bin/bash \
