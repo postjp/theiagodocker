@@ -1,0 +1,2 @@
+docker build    .    --build-arg uid=$(id -u)   --build-arg gid=$(id -g)   --build-arg version=next    -t theia:next
+docker run --security-opt seccomp=unconfined -e GO111MODULE=auto -it --init -p 3000:3000 -v "$(pwd):/home/project:cached" theia:next
