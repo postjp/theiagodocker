@@ -1,1 +1,2 @@
+    docker build    .    -t theia:gosec
     docker run --init  -itd -p 1443:1443  -e token=mypassword  -v myproject:/home/project -u `id -u`:`id -g`  theia:gosec
